@@ -2,6 +2,8 @@
 name = "mdbook-translator"
 version = "0.1.0"
 edition = "2024"
+discription = "A translation preprocessor plugin for mdBook that automatically translates documents using the DeepSeek API"
+license = "MIT"
 
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
