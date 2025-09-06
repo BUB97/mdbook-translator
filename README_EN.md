@@ -1,0 +1,145 @@
+# mdbook-translator
+
+A translation preprocessor plugin for mdBook that automatically translates Markdown documents using the DeepSeek API.
+
+## Features
+
+- 🌐 Automatic translation of mdBook document content
+- 🔄 Smart caching mechanism to avoid duplicate translations
+- 🎯 Preserves code blocks and technical terms
+- 🚀 High-quality translation based on DeepSeek API
+- ⚙️ Configurable prompts
+- 📚 Multi-language translation support
+
+## Installation
+
+### Build from Source
+
+```bash
+# Clone the project
+git clone <repository-url>
+cd mdbook-translator
+
+# Build the project
+cargo build --release
+
+# Install to system path
+cargo install --path .
+```
+
+### Using cargo install
+
+```bash
+cargo install mdbook-translator
+```
+
+## Configuration
+
+### 1. Get DeepSeek API Key
+
+Visit [DeepSeek Official Website](https://platform.deepseek.com/) to get your API key and set the environment variable:
+
+```bash
+export DEEPSEEK_API_KEY="your-api-key-here"
+```
+
+### 2. Configure book.toml
+
+Add the following configuration to your mdBook project's `book.toml` file:
+
+```toml
+[book]
+title = "Your Book Title"
+authors = ["Author Name"]
+
+[build]
+preprocessor = ["mdbook-translator"]
+build-dir = "book-zh"  # Optional: specify output directory
+
+[preprocessor.translator]
+command = "mdbook-translator"
+language = "Chinese"  # Target translation language
+prompt = "Please keep technical terms like Send, Future, Futures in Rust untranslated"  # Optional: custom translation prompt
+```
+
+### Configuration Options
+
+- `language`: Target translation language (e.g., "Chinese", "Japanese", "Korean", etc.)
+- `prompt`: Optional custom translation prompt to guide translation behavior
+- `build-dir`: Optional output directory, defaults to "book"
+
+## Usage
+
+### Basic Usage
+
+```bash
+# Run in your mdBook project directory
+mdbook build
+```
+
+The plugin will automatically:
+1. Read source documents
+2. Call DeepSeek API for translation
+3. Cache translation results
+4. Generate translated documents
+
+### Clear Cache
+
+If you need to retranslate, you can delete the cache file:
+
+```bash
+rm deepseek_cache.json
+```
+
+### Debug Mode
+
+The plugin outputs debug information to standard error output, including cache hit information.
+
+## How It Works
+
+1. **Document Parsing**: The plugin traverses all chapters and pages in mdBook
+2. **Content Chunking**: Splits long text into chunks suitable for API processing
+3. **Smart Translation**: Calls DeepSeek API for translation while preserving code blocks and formatting
+4. **Caching Mechanism**: Uses SHA256 hash to cache translation results, avoiding duplicate translations
+5. **Document Reconstruction**: Replaces original document content with translated content
+
+## Important Notes
+
+- Ensure you have set the correct `DEEPSEEK_API_KEY` environment variable
+- Translation process requires network connection (users in mainland China may need to configure HTTP proxy)
+- First translation may take longer, subsequent builds will use cache for acceleration
+- Code blocks and special formatting will be preserved and not translated
+- It's recommended to backup original documents before translation
+
+## Dependencies
+
+- `mdbook`: mdBook core library
+- `reqwest`: HTTP client for API calls
+- `serde_json`: JSON serialization/deserialization
+- `sha2`: Hash calculation for cache key generation
+- `anyhow`: Error handling
+- `clap`: Command line argument parsing
+- `toml`: TOML configuration file parsing
+
+## Example Project
+
+Refer to the `async-book` project configuration:
+
+```toml
+[book]
+title = "Asynchronous Programming in Rust"
+authors = ["Taylor Cramer", "Nicholas Cameron", "Open source contributors"]
+
+[build]
+preprocessor = ["mdbook-translator"]
+build-dir = "book-zh"
+
+[preprocessor.translator]
+command = "mdbook-translator"
+language = "Chinese"
+prompt = "Please keep technical terms like Send, Future, Futures in Rust untranslated"
+```
+
+## Contributing
+
+Welcome to submit Issues and Pull Requests!
