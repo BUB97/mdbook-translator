@@ -55,19 +55,21 @@ title = "Your Book Title"
 authors = ["Author Name"]
 
 [build]
-preprocessor = ["mdbook-translator"]
 build-dir = "book-zh"  # Optional: specify output directory
 
 [preprocessor.translator]
 command = "mdbook-translator"
 language = "Chinese"  # Target translation language
 prompt = "Please keep technical terms like Send, Future, Futures in Rust untranslated"  # Optional: custom translation prompt
+# support configure a proxy like:
+proxy = "http://127.0.0.1:8099"  # Optional: HTTP proxy URL
 ```
 
 ### Configuration Options
 
 - `language`: Target translation language (e.g., "Chinese", "Japanese", "Korean", etc.)
 - `prompt`: Optional custom translation prompt to guide translation behavior
+- `proxy`: Optional HTTP proxy URL
 - `build-dir`: Optional output directory, defaults to "book"
 
 ## Usage

@@ -13,6 +13,7 @@ pub struct DeepSeekTranslator {
     cache_file: String,
     pub target_lang: String,
     pub prompt: String,
+    pub proxy: String,
 }
 
 impl DeepSeekTranslator {
@@ -21,6 +22,7 @@ impl DeepSeekTranslator {
             cache_file: "deepseek_cache.json".to_string(),
             target_lang: String::new(),
             prompt: String::new(),
+            proxy: String::new(),
         }
     }
 
@@ -32,6 +34,10 @@ impl DeepSeekTranslator {
         self.prompt = prompt.to_string();
     }
 
+    pub fn set_proxy(&mut self, proxy: &str) {
+        self.proxy = proxy.to_string();
+    }
+    
     // 读取缓存
     fn load_cache(&self) -> Value {
         if Path::new(&self.cache_file).exists() {
@@ -153,7 +159,7 @@ impl DeepSeekTranslator {
 
 impl Preprocessor for DeepSeekTranslator {
     fn name(&self) -> &str {
-        "deepseek-translator"
+        "translator"
     }
 
     fn run(&self, _ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
@@ -163,13 +169,16 @@ impl Preprocessor for DeepSeekTranslator {
 
         eprintln!("api_key: {:?}", api_key);
 
-        let client = Client::builder()
-                    .proxy(reqwest::Proxy::all("http://127.0.0.1:8099")?)
-                    .timeout(Duration::from_secs(600)) // 显式设置超时
-                    .build()?;
+        let proxy = &self.proxy;
+        let mut client_builder = Client::builder()
+                    .timeout(Duration::from_secs(600)); // 显式设置超时
+        
+        if !proxy.is_empty() {
+            client_builder = client_builder.proxy(reqwest::Proxy::all(proxy)?);
+        }
+        
+        let client = client_builder.build()?;
         let mut cache = self.load_cache();
-
-
 
         self.walk_items(&client, &api_key, &mut book.sections, &mut cache);
 

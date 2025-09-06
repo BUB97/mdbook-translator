@@ -32,6 +32,10 @@ pub fn handle_preprocessing(pre: &mut DeepSeekTranslator) -> Result<(), Error> {
         ctx.config.get("preprocessor")
             .and_then(|p| p.get("translator"))
             .and_then(|t| t.get("prompt"));
+    let proxy = 
+        ctx.config.get("preprocessor")
+            .and_then(|p| p.get("translator"))
+            .and_then(|t| t.get("proxy"));
 
     if let Some(Value::String(language_config)) = language {
         if !language_config.is_empty() {
@@ -42,6 +46,12 @@ pub fn handle_preprocessing(pre: &mut DeepSeekTranslator) -> Result<(), Error> {
     if let Some(Value::String(prompt_config)) = ext_prompt {
         if !prompt_config.is_empty() {
             pre.set_prompt(prompt_config);
+        }
+    }
+
+    if let Some(Value::String(proxy_config)) = proxy {
+        if !proxy_config.is_empty() {
+            pre.set_proxy(proxy_config);
         }
     }
 
@@ -69,8 +79,8 @@ pub fn handle_supports(pre: &dyn Preprocessor, sub_args: &ArgMatches) -> ! {
 }
 
 pub fn make_app() -> Command {
-    Command::new("nop-preprocessor")
-        .about("A mdbook preprocessor which does precisely nothing")
+    Command::new("mdbook-translator")
+        .about("A translation preprocessor plugin for mdBook that automatically translates Markdown documents using the DeepSeek API.")
         .subcommand(
             Command::new("supports")
                 .arg(Arg::new("renderer").required(true))

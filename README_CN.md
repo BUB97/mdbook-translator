@@ -55,19 +55,21 @@ title = "你的书籍标题"
 authors = ["作者名"]
 
 [build]
-preprocessor = ["mdbook-translator"]
 build-dir = "book-zh"  # 可选：指定输出目录
 
 [preprocessor.translator]
 command = "mdbook-translator"
 language = "Chinese"  # 目标翻译语言
 prompt = "请保持Send、Future、Futures等rust中的专业术语不要翻译"  # 可选：自定义翻译提示
+# 支持配置代理
+proxy = "http://127.0.0.1:8099"  # 可选：HTTP 代理 URL
 ```
 
 ### 配置选项说明
 
-- `language`: 目标翻译语言（如："Chinese", "Japanese", "Korean" 等）
+- `language`: 目标翻译语言（如 "Chinese"、"Japanese"、"Korean" 等）
 - `prompt`: 可选的自定义翻译提示，用于指导翻译行为
+- `proxy`: 可选的 HTTP 代理 URL
 - `build-dir`: 可选的输出目录，默认为 "book"
 
 ## 使用方法
