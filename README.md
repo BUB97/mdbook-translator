@@ -1,129 +1,131 @@
 # mdbook-translator
 
-一个用于 mdBook 的翻译预处理器插件，使用 DeepSeek API 自动翻译 Markdown 文档。
+**Languages:** [English](README.md) | [中文](README_CN.md)
 
-## 功能特性
+A translation preprocessor plugin for mdBook that automatically translates Markdown documents using the DeepSeek API.
 
-- 🌐 自动翻译 mdBook 文档内容
-- 🔄 智能缓存机制，避免重复翻译
-- 🎯 保留代码块和专业术语
-- 🚀 基于 DeepSeek API 的高质量翻译
-- ⚙️ 可配置prompt
-- 📚 支持多语言翻译
+## Features
 
-## 安装
+- 🌐 Automatic translation of mdBook document content
+- 🔄 Smart caching mechanism to avoid duplicate translations
+- 🎯 Preserves code blocks and technical terms
+- 🚀 High-quality translation based on DeepSeek API
+- ⚙️ Configurable prompts
+- 📚 Multi-language translation support
 
-### 从源码构建
+## Installation
+
+### Build from Source
 
 ```bash
-# 克隆项目
+# Clone the project
 git clone <repository-url>
 cd mdbook-translator
 
-# 构建项目
+# Build the project
 cargo build --release
 
-# 安装到系统路径
+# Install to system path
 cargo install --path .
 ```
 
-### 使用 cargo install
+### Using cargo install
 
 ```bash
 cargo install mdbook-translator
 ```
 
-## 配置
+## Configuration
 
-### 1. 获取 DeepSeek API 密钥
+### 1. Get DeepSeek API Key
 
-访问 [DeepSeek 官网](https://platform.deepseek.com/) 获取 API 密钥，并设置环境变量：
+Visit [DeepSeek Official Website](https://platform.deepseek.com/) to get your API key and set the environment variable:
 
 ```bash
 export DEEPSEEK_API_KEY="your-api-key-here"
 ```
 
-### 2. 配置 book.toml
+### 2. Configure book.toml
 
-在你的 mdBook 项目的 `book.toml` 文件中添加以下配置：
+Add the following configuration to your mdBook project's `book.toml` file:
 
 ```toml
 [book]
-title = "你的书籍标题"
-authors = ["作者名"]
+title = "Your Book Title"
+authors = ["Author Name"]
 
 [build]
 preprocessor = ["mdbook-translator"]
-build-dir = "book-zh"  # 可选：指定输出目录
+build-dir = "book-zh"  # Optional: specify output directory
 
 [preprocessor.translator]
 command = "mdbook-translator"
-language = "Chinese"  # 目标翻译语言
-prompt = "请保持Send、Future、Futures等rust中的专业术语不要翻译"  # 可选：自定义翻译提示
+language = "Chinese"  # Target translation language
+prompt = "Please keep technical terms like Send, Future, Futures in Rust untranslated"  # Optional: custom translation prompt
 ```
 
-### 配置选项说明
+### Configuration Options
 
-- `language`: 目标翻译语言（如："Chinese", "Japanese", "Korean" 等）
-- `prompt`: 可选的自定义翻译提示，用于指导翻译行为
-- `build-dir`: 可选的输出目录，默认为 "book"
+- `language`: Target translation language (e.g., "Chinese", "Japanese", "Korean", etc.)
+- `prompt`: Optional custom translation prompt to guide translation behavior
+- `build-dir`: Optional output directory, defaults to "book"
 
-## 使用方法
+## Usage
 
-### 基本使用
+### Basic Usage
 
 ```bash
-# 在你的 mdBook 项目目录中运行
+# Run in your mdBook project directory
 mdbook build
 ```
 
-插件会自动：
-1. 读取源文档
-2. 调用 DeepSeek API 进行翻译
-3. 缓存翻译结果
-4. 生成翻译后的文档
+The plugin will automatically:
+1. Read source documents
+2. Call DeepSeek API for translation
+3. Cache translation results
+4. Generate translated documents
 
-### 清理缓存
+### Clear Cache
 
-如果需要重新翻译，可以删除缓存文件：
+If you need to retranslate, you can delete the cache file:
 
 ```bash
 rm deepseek_cache.json
 ```
 
-### 调试模式
+### Debug Mode
 
-插件会输出调试信息到标准错误输出，包括缓存命中情况等。
+The plugin outputs debug information to standard error output, including cache hit information.
 
-## 工作原理
+## How It Works
 
-1. **文档解析**: 插件遍历 mdBook 的所有章节和页面
-2. **内容分块**: 将长文本分割成适合 API 处理的块
-3. **智能翻译**: 调用 DeepSeek API 进行翻译，保留代码块和格式
-4. **缓存机制**: 使用 SHA256 哈希缓存翻译结果，避免重复翻译
-5. **文档重建**: 用翻译后的内容替换原文档内容
+1. **Document Parsing**: The plugin traverses all chapters and pages in mdBook
+2. **Content Chunking**: Splits long text into chunks suitable for API processing
+3. **Smart Translation**: Calls DeepSeek API for translation while preserving code blocks and formatting
+4. **Caching Mechanism**: Uses SHA256 hash to cache translation results, avoiding duplicate translations
+5. **Document Reconstruction**: Replaces original document content with translated content
 
-## 注意事项
+## Important Notes
 
-- 确保设置了正确的 `DEEPSEEK_API_KEY` 环境变量
-- 翻译过程需要网络连接（中国大陆用户可能需要配置http代理）
-- 首次翻译可能需要较长时间，后续构建会使用缓存加速
-- 代码块和特殊格式会被保留，不会被翻译
-- 建议在翻译前备份原始文档
+- Ensure you have set the correct `DEEPSEEK_API_KEY` environment variable
+- Translation process requires network connection (users in mainland China may need to configure HTTP proxy)
+- First translation may take longer, subsequent builds will use cache for acceleration
+- Code blocks and special formatting will be preserved and not translated
+- It's recommended to backup original documents before translation
 
-## 依赖项
+## Dependencies
 
-- `mdbook`: mdBook 核心库
-- `reqwest`: HTTP 客户端，用于 API 调用
-- `serde_json`: JSON 序列化/反序列化
-- `sha2`: 哈希计算，用于缓存键生成
-- `anyhow`: 错误处理
-- `clap`: 命令行参数解析
-- `toml`: TOML 配置文件解析
+- `mdbook`: mdBook core library
+- `reqwest`: HTTP client for API calls
+- `serde_json`: JSON serialization/deserialization
+- `sha2`: Hash calculation for cache key generation
+- `anyhow`: Error handling
+- `clap`: Command line argument parsing
+- `toml`: TOML configuration file parsing
 
-## 示例项目
+## Example Project
 
-参考 `async-book` 项目的配置：
+Refer to the `async-book` project configuration:
 
 ```toml
 [book]
@@ -137,9 +139,9 @@ build-dir = "book-zh"
 [preprocessor.translator]
 command = "mdbook-translator"
 language = "Chinese"
-prompt = "请保持Send、Future、Futures等rust中的专业术语不要翻译"
+prompt = "Please keep technical terms like Send, Future, Futures in Rust untranslated"
 ```
 
-## 贡献
+## Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Welcome to submit Issues and Pull Requests!
