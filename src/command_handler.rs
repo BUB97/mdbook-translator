@@ -5,8 +5,10 @@ use std::io;
 use mdbook::errors::Error;
 use anyhow::Result;
 use std::process;
+use toml::value::Value;
+use crate::translate_preprocessor::DeepSeekTranslator;
 
-pub fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
+pub fn handle_preprocessing(pre: &mut DeepSeekTranslator) -> Result<(), Error> {
     let (ctx, book) = CmdPreprocessor::parse_input(io::stdin())?;
 
     let book_version = Version::parse(&ctx.mdbook_version)?;
@@ -21,6 +23,30 @@ pub fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
             ctx.mdbook_version
         );
     }
+
+    let language = 
+        ctx.config.get("preprocessor")
+            .and_then(|p| p.get("translator"))
+            .and_then(|t| t.get("language"));
+    let ext_prompt = 
+        ctx.config.get("preprocessor")
+            .and_then(|p| p.get("translator"))
+            .and_then(|t| t.get("prompt"));
+
+    if let Some(Value::String(language_config)) = language {
+        if !language_config.is_empty() {
+            pre.set_language(language_config);
+        }
+    }
+
+    if let Some(Value::String(prompt_config)) = ext_prompt {
+        if !prompt_config.is_empty() {
+            pre.set_prompt(prompt_config);
+        }
+    }
+
+    eprintln!("target_lang: {:?}", pre.target_lang);
+    eprintln!("prompt: {:?}", pre.prompt);
 
     let processed_book = pre.run(&ctx, book)?;
     serde_json::to_writer(io::stdout(), &processed_book)?;

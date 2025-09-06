@@ -11,15 +11,25 @@ use std::time::Duration;
 
 pub struct DeepSeekTranslator {
     cache_file: String,
-    target_lang: String,
+    pub target_lang: String,
+    pub prompt: String,
 }
 
 impl DeepSeekTranslator {
-    pub fn new(target_lang: &str) -> Self {
+    pub fn new() -> Self {
         Self {
             cache_file: "deepseek_cache.json".to_string(),
-            target_lang: target_lang.to_string(),
+            target_lang: String::new(),
+            prompt: String::new(),
         }
+    }
+
+    pub fn set_language(&mut self, lang: &str) {
+        self.target_lang = lang.to_string();
+    }
+
+    pub fn set_prompt(&mut self, prompt: &str) {
+        self.prompt = prompt.to_string();
     }
 
     // 读取缓存
@@ -47,6 +57,100 @@ impl DeepSeekTranslator {
     }
 }
 
+struct Message {
+    role: String,
+    content: String,
+}
+
+impl DeepSeekTranslator {
+    pub fn translate_text(
+        &self,
+        client: &Client,
+        api_key: &str,
+        text: &str,
+        cache: &mut Value,
+    ) -> String {
+        let key = self.hash_key(text);
+        // 使用原文作为 key，简单去重
+        if let Some(cached) = cache.get(&key) {
+            eprintln!("cached: {:?}", cached);
+            return cached.as_str().unwrap_or("").to_string();
+        }
+
+        let url = "https://api.deepseek.com/v1/chat/completions";
+        let mut messages = Vec::from([
+            Message {
+                role: "system".to_string(),
+                content: "你是专业技术文档翻译助手，保留代码、命令，术语翻译尽量遵循社区的常见用法。如果有不理解的术语，保持原文。".to_string(),
+            },
+            Message {
+                role: "user".to_string(),
+                content: format!("Translate the following text into {}:\n\n{}", self.target_lang, text).to_string(),
+            }
+        ]);
+        if !self.prompt.is_empty() {
+            messages.push(Message {
+                role: "user".to_string(),
+                content: self.prompt.to_string(),
+            });
+        }
+
+        let body = json!({
+            "model": "deepseek-chat",
+            "messages": messages.iter().map(|m| json!({
+                "role": m.role,
+                "content": m.content,
+            })).collect::<Vec<_>>(),
+        });
+
+        let resp = client
+            .post(url)
+            .header("Authorization", format!("Bearer {}", api_key))
+            .json(&body)
+            .send()
+            .expect("请求 DeepSeek API 失败");
+
+        let json_resp: serde_json::Value =
+            resp.json().expect("解析 DeepSeek API 返回失败");
+
+        eprintln!("json_resp: {:?}", json_resp);
+        let translated = json_resp["choices"][0]["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+
+        if !translated.is_empty() {
+            // 写入缓存
+            cache[&key] = json!(translated);
+        }
+
+        translated
+    }
+
+    fn walk_items(&self, client: &Client, api_key: &str, items: &mut Vec<BookItem>, cache: &mut Value) {
+        for item in items.iter_mut() {
+            match item {
+                BookItem::Chapter(chapter) => {
+                    let chunks = split_into_chunks(&chapter.content, 4000);
+                    chapter.content = "".to_string();
+                    eprintln!("chunks: {:?}", chunks);
+                    chunks.into_iter().for_each(|chunk| {
+                        eprintln!("chunk: {:?}, {:?}", chunk, chunk.len());
+                        let translated = self.translate_text(client, api_key, &chunk, cache);
+                        chapter.content.push_str(&translated);
+                        // 如果是以```结尾，则加上一个换行符
+                        if translated.ends_with("```") {
+                            chapter.content.push_str("\n\n");
+                        }
+                    });
+                    self.walk_items(client, api_key, &mut chapter.sub_items, cache);
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 impl Preprocessor for DeepSeekTranslator {
     fn name(&self) -> &str {
         "deepseek-translator"
@@ -65,83 +169,9 @@ impl Preprocessor for DeepSeekTranslator {
                     .build()?;
         let mut cache = self.load_cache();
 
-        fn translate_text(
-            client: &Client,
-            api_key: &str,
-            text: &str,
-            cache: &mut Value,
-            translator: &DeepSeekTranslator,
-        ) -> String {
-            let key = translator.hash_key(text);
-            // 使用原文作为 key，简单去重
-            if let Some(cached) = cache.get(&key) {
-                eprintln!("cached: {:?}", cached);
-                return cached.as_str().unwrap_or("").to_string();
-            }
 
-            let url = "https://api.deepseek.com/v1/chat/completions";
-            let body = json!({
-                "model": "deepseek-chat",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "你是专业技术文档翻译助手，保留代码、命令，术语翻译尽量遵循 Rust 中文社区的常见用法。如果有不理解的术语，保持英文原文。"
-                    },
-                    {
-                        "role": "user",
-                        "content": format!("Translate the following text into Chinese:\n\n{}", text)
-                    }
-                ]
-            });
 
-            let resp = client
-                .post(url)
-                .header("Authorization", format!("Bearer {}", api_key))
-                .json(&body)
-                .send()
-                .expect("请求 DeepSeek API 失败");
-
-            let json_resp: serde_json::Value =
-                resp.json().expect("解析 DeepSeek API 返回失败");
-
-            eprintln!("json_resp: {:?}", json_resp);
-            let translated = json_resp["choices"][0]["message"]["content"]
-                .as_str()
-                .unwrap_or("")
-                .to_string();
-
-            if !translated.is_empty() {
-                // 写入缓存
-                cache[&key] = json!(translated);
-            }
-
-            translated
-        }
-
-        fn walk_items(client: &Client, api_key: &str, items: &mut Vec<BookItem>, cache: &mut Value, translator: &DeepSeekTranslator,) {
-            for item in items.iter_mut() {
-                match item {
-                    BookItem::Chapter(chapter) => {
-                        let chunks = split_into_chunks(&chapter.content, 4000);
-                        chapter.content = "".to_string();
-                        eprintln!("chunks: {:?}", chunks);
-                        chunks.into_iter().for_each(|chunk| {
-                            eprintln!("chunk: {:?}, {:?}", chunk, chunk.len());
-                            let translated = translate_text(client, api_key, &chunk, cache, translator);
-                            chapter.content.push_str(&translated);
-                            // 如果是以```结尾，则加上一个换行符
-                            if translated.ends_with("```") {
-                                chapter.content.push_str("\n\n");
-                            }
-                        });
-                        walk_items(client, api_key, &mut chapter.sub_items, cache, translator);
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        walk_items(&client, &api_key, &mut book.sections, &mut cache, &self);
+        self.walk_items(&client, &api_key, &mut book.sections, &mut cache);
 
         // 保存缓存
         self.save_cache(&cache);
