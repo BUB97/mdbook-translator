@@ -96,7 +96,7 @@ The plugin outputs debug information to standard error output, including cache h
 ## Important Notes
 
 - Ensure you have set the correct `DEEPSEEK_API_KEY` environment variable
-- Translation process requires network connection (users in mainland China may need to configure HTTP proxy)
+
 - First translation may take longer, subsequent builds will use cache for acceleration
 - Code blocks and special formatting will be preserved and not translated
 - It's recommended to backup original documents before translation
