@@ -1,6 +1,6 @@
 # mdbook-translator
 
-**Languages:** [English](README.md) | [中文](README_CN.md)
+**Languages:** [English](README_EN.md) | [中文](README.md)
 
 A translation preprocessor plugin for mdBook that automatically translates Markdown documents using the DeepSeek API.
 

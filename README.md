@@ -1,6 +1,6 @@
 # mdbook-translator
 
-**Languages:** [English](README.md) | [中文](README_CN.md)
+**Languages:** [English](README_EN.md) | [中文](README.md)
 
 一个用于 mdBook 的翻译预处理器插件，使用 DeepSeek API 自动翻译 Markdown 文档。
 
