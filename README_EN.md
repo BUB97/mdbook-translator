@@ -15,20 +15,6 @@ A translation preprocessor plugin for mdBook that automatically translates Markd
 
 ## Installation
 
-### Build from Source
-
-```bash
-# Clone the project
-git clone <repository-url>
-cd mdbook-translator
-
-# Build the project
-cargo build --release
-
-# Install to system path
-cargo install --path .
-```
-
 ### Using cargo install
 
 ```bash
@@ -124,6 +110,26 @@ The plugin outputs debug information to standard error output, including cache h
 - `anyhow`: Error handling
 - `clap`: Command line argument parsing
 - `toml`: TOML configuration file parsing
+
+## for Developers
+
+### Build from Source
+
+```bash
+# Clone the project
+# ssh
+git clone git@github.com:BUB97/mdbook-translator.git
+# or https
+git clone https://github.com/BUB97/mdbook-translator.git
+
+cd mdbook-translator
+
+# Build the project
+cargo build --release
+
+# Install to system path
+cargo install --path .
+```
 
 ## Contributing
 

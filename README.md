@@ -15,20 +15,6 @@
 
 ## 安装
 
-### 从源码构建
-
-```bash
-# 克隆项目
-git clone <repository-url>
-cd mdbook-translator
-
-# 构建项目
-cargo build --release
-
-# 安装到系统路径
-cargo install --path .
-```
-
 ### 使用 cargo install
 
 ```bash
@@ -124,6 +110,26 @@ rm deepseek_cache.json
 - `anyhow`: 错误处理
 - `clap`: 命令行参数解析
 - `toml`: TOML 配置文件解析
+
+## for开发者
+
+### 从源码构建
+
+```bash
+# 克隆项目
+# ssh
+git clone git@github.com:BUB97/mdbook-translator.git
+# 或https
+git clone https://github.com/BUB97/mdbook-translator.git
+
+cd mdbook-translator
+
+# 构建项目
+cargo build --release
+
+# 安装到系统路径
+cargo install --path .
+```
 
 ## 贡献
 
