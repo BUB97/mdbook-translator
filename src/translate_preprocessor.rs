@@ -137,6 +137,8 @@ impl DeepSeekTranslator {
         if !translated.is_empty() {
             // 写入缓存
             cache[&key] = json!(translated);
+            // 保存缓存
+            self.save_cache(&cache);
         }
 
         let mut print_translated = String::new();
@@ -207,7 +209,7 @@ impl Preprocessor for DeepSeekTranslator {
         self.walk_items(&client, &api_key, &mut book.sections, &mut cache);
 
         // 保存缓存
-        self.save_cache(&cache);
+        // self.save_cache(&cache);
 
         Ok(book)
     }
