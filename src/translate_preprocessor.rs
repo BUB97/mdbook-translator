@@ -41,7 +41,7 @@ impl DeepSeekTranslator {
     // 读取缓存
     fn load_cache(&self) -> Value {
         if Path::new(&self.cache_file).exists() {
-            let data = fs::read_to_string(&self.cache_file).expect("读取缓存文件失败");
+            let data = fs::read_to_string(&self.cache_file).expect("failed to read cache file");
             serde_json::from_str(&data).unwrap_or(json!({}))
         } else {
             json!({})
@@ -50,8 +50,8 @@ impl DeepSeekTranslator {
 
     // 写入缓存
     fn save_cache(&self, cache: &Value) {
-        let data = serde_json::to_string_pretty(cache).expect("序列化缓存失败");
-        fs::write(&self.cache_file, data).expect("写入缓存失败");
+        let data = serde_json::to_string_pretty(cache).expect("failed to serialize cache");
+        fs::write(&self.cache_file, data).expect("failed to write cache file");
     }
 
     fn hash_key(&self, text: &str) -> String {
@@ -79,7 +79,16 @@ impl DeepSeekTranslator {
         let key = self.hash_key(text);
         // 使用原文作为 key，简单去重
         if let Some(cached) = cache.get(&key) {
-            eprintln!("cached: {:?}", cached);
+            let mut print_cached = String::new();
+            if let Value::String(cached_str) = cached {
+                if cached_str.chars().count() > 100 {
+                    print_cached.push_str(&cached_str.chars().take(100).collect::<String>());
+                    print_cached.push_str("...");
+                } else {
+                    print_cached.push_str(cached_str);
+                }
+            }
+            eprintln!("\x1b[38;2;38;188;213;1mCache hit:\x1b[0m {:?}", print_cached);
             return cached.as_str().unwrap_or("").to_string();
         }
 
@@ -109,17 +118,17 @@ impl DeepSeekTranslator {
             })).collect::<Vec<_>>(),
         });
 
+        eprintln!("\x1b[38;2;214;200;75;1mRequesting Deepseek API, please wait patiently\x1b[0m");
         let resp = client
             .post(url)
             .header("Authorization", format!("Bearer {}", api_key))
             .json(&body)
             .send()
-            .expect("请求 DeepSeek API 失败");
+            .expect("failed to send request to deepseek api");
 
         let json_resp: serde_json::Value =
-            resp.json().expect("解析 DeepSeek API 返回失败");
+            resp.json().expect("failed to parse response from deepseek api");
 
-        eprintln!("json_resp: {:?}", json_resp);
         let translated = json_resp["choices"][0]["message"]["content"]
             .as_str()
             .unwrap_or("")
@@ -130,6 +139,16 @@ impl DeepSeekTranslator {
             cache[&key] = json!(translated);
         }
 
+        let mut print_translated = String::new();
+            if translated.chars().count() > 100 {
+                print_translated.push_str(&translated.chars().take(100).collect::<String>());
+                print_translated.push_str("...");
+            } else {
+                print_translated.push_str(&translated);
+            }
+
+        eprintln!("\x1b[38;2;214;200;75;1mRequest succeed, translated:\x1b[0m {:?}", print_translated);
+
         translated
     }
 
@@ -137,11 +156,17 @@ impl DeepSeekTranslator {
         for item in items.iter_mut() {
             match item {
                 BookItem::Chapter(chapter) => {
+                    let chapter_num = match &chapter.number {
+                        Some(num) => num.to_string(),
+                        None => "".to_string(),
+                    };
+
+                    eprintln!();
+                    eprintln!("\x1b[32;1mProcessing chapter:\x1b[0m  \x1b[1m{}{}\x1b[0m", &chapter_num, &chapter.name);
+
                     let chunks = split_into_chunks(&chapter.content, 4000);
                     chapter.content = "".to_string();
-                    eprintln!("chunks: {:?}", chunks);
                     chunks.into_iter().for_each(|chunk| {
-                        eprintln!("chunk: {:?}, {:?}", chunk, chunk.len());
                         let translated = self.translate_text(client, api_key, &chunk, cache);
                         chapter.content.push_str(&translated);
                         // 如果是以```结尾，则加上一个换行符
@@ -163,11 +188,10 @@ impl Preprocessor for DeepSeekTranslator {
     }
 
     fn run(&self, _ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
-        eprintln!("here-----");
         let api_key = env::var("DEEPSEEK_API_KEY")
             .expect("请在环境变量中设置 DEEPSEEK_API_KEY");
 
-        eprintln!("api_key: {:?}", api_key);
+        // eprintln!("api_key: {:?}", api_key);
 
         let proxy = &self.proxy;
         let mut client_builder = Client::builder()
@@ -193,7 +217,6 @@ fn split_into_chunks(text: &str, max_chars: usize) -> Vec<String> {
     let mut chunks = Vec::new();
     let mut buffer = String::new();
     let mut is_in_code = false;
-    eprintln!("text: {:?}", text);
 
     text.lines().into_iter().for_each(|line| {
         if line.is_empty() {
